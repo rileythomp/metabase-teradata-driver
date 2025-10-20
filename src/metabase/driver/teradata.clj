@@ -116,11 +116,21 @@
                      :remarks remarks}))
                 (range 1 (inc (.getColumnCount metadata)))))))
     (catch java.sql.SQLException e
-      (if (= "42S02" (.getSQLState e)) ; Check for SQLState 42S02 (object does not exist)
-        (do
-          (log/warn (trs "Table or view ''{0}'' in schema ''{1}'' does not exist." table-name schema))
-          []) ; Return an empty field set
-        (throw e))))) ; Re-throw other exceptions
+      (let [sqlstate (.getSQLState e)]
+        (cond
+          ;; 42S02: base object gone
+          (= "42S02" sqlstate)
+          (do
+            (log/warn (trs "Table or view ''{0}'' in schema ''{1}'' does not exist." table-name schema))
+            [])
+          ;; 42S22: column(s) referenced by the view no longer exist
+          (= "42S22" sqlstate)
+          (do
+            (log/warn (trs "Skipping fields sync for ''{0}'' in schema ''{1}'' due to missing column(s). Cause: {2}"
+                           table-name schema (.getMessage e)))
+            [])
+          :else
+          (throw e)))))) ; Re-throw other exceptions
 
 (defn ^:private fields-metadata
   [driver ^Connection conn {schema :schema, table-name :name} ^String db-name-or-nil]
