@@ -116,7 +116,8 @@
                      :remarks remarks}))
                 (range 1 (inc (.getColumnCount metadata)))))))
     (catch java.sql.SQLException e
-      (let [sqlstate (.getSQLState e)]
+      (let [sqlstate (.getSQLState e)
+            error-code (.getErrorCode e)]
         (cond
           ;; 42S02: base object gone
           (= "42S02" sqlstate)
@@ -127,6 +128,12 @@
           (= "42S22" sqlstate)
           (do
             (log/warn (trs "Skipping fields sync for ''{0}'' in schema ''{1}'' due to missing column(s). Cause: {2}"
+                           table-name schema (.getMessage e)))
+            [])
+          ;; 5407: Invalid operation for DateTime or Interval
+          (or (= 5407 error-code) (= "HY000" sqlstate))
+          (do
+            (log/warn (trs "Skipping fields sync for ''{0}'' in schema ''{1}'' due to DateTime/Interval error. Cause: {2}"
                            table-name schema (.getMessage e)))
             [])
           :else
@@ -322,25 +329,6 @@
   (let [cal (Calendar/getInstance (TimeZone/getTimeZone (t/zone-id t)))
         t   (t/sql-timestamp t)]
     (.setTimestamp ps i t cal)))
-
-(defmethod sql-jdbc.execute/do-with-connection-with-options :redshift
-  [driver db-or-id-or-spec options f]
-  (sql-jdbc.execute/do-with-resolved-connection
-   driver
-   db-or-id-or-spec
-   options
-   (fn [^Connection conn]
-     (when-not (sql-jdbc.execute/recursive-connection?)
-       (sql-jdbc.execute/set-best-transaction-level! driver conn)
-       (try
-         (.setReadOnly conn true)
-         (catch Throwable e
-           (log/debug e (trs "Error setting connection to read-only"))))
-       (try
-         (.setHoldability conn ResultSet/CLOSE_CURSORS_AT_COMMIT)
-         (catch Throwable e
-           (log/debug e (trs "Error setting default holdability for connection")))))
-     (f conn))))
 
 (defn- cleanup-query
   "Remove the OFFSET keyword."
