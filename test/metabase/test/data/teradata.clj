@@ -1,14 +1,12 @@
 (ns metabase.test.data.teradata
-  (:require [clojure.java.jdbc :as jdbc]
-            [metabase.driver.sql-jdbc.connection :as sql-jdbc.conn]
+  (:require [metabase.driver.sql-jdbc.connection :as sql-jdbc.conn]
             [metabase.test.data
              [interface :as tx]
              [sql :as sql.tx]
              [sql-jdbc :as sql-jdbc.tx]]
             [metabase.test.data.sql-jdbc
              [execute :as execute]
-             [load-data :as load-data]]
-            [metabase.util :as u]))
+             [load-data :as load-data]]))
 
 (sql-jdbc.tx/add-test-extensions! :teradata)
 

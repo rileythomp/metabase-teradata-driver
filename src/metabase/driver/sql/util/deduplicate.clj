@@ -1,6 +1,9 @@
 (ns metabase.driver.sql.util.deduplicate
   "Utility function for de-duplication as used by Oracle and Teradata drivers. Extracted from Oracle driver"
-  (:require [clojure.string :as str]))
+  (:require
+   [clojure.string :as str]))
+
+(set! *warn-on-reflection* true)
 
 (defn- increment-identifier-suffix
   "Add an appropriate suffix to a keyword IDENTIFIER to make it distinct from previous usages of the same identifier,
@@ -14,7 +17,7 @@
      (if-let [[_ existing-suffix] (re-find #"^.*_(\d+$)" identifier)]
        ;; if identifier already has an alias like col_2 then increment it to col_3
        (let [new-suffix (str (inc (Integer/parseInt existing-suffix)))]
-         (clojure.string/replace identifier (re-pattern (str existing-suffix \$)) new-suffix))
+         (str/replace identifier (re-pattern (str existing-suffix \$)) new-suffix))
        ;; otherwise just stick a _2 on the end so it's col_2
        (str identifier "_2")))))
 
@@ -27,7 +30,7 @@
       ;; if something's already an alias form like [:table.col :col] it's g2g
       col
       ;; otherwise if it's something like :table.col replace with [:table.col :col]
-      [col (keyword (last (clojure.string/split (name col) #"\.")))])))
+      [col (keyword (last (str/split (name col) #"\.")))])))
 
 (defn deduplicate-identifiers
   "Make sure every column in SELECT-CLAUSE has a unique alias.
