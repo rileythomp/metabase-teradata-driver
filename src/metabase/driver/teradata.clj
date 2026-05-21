@@ -339,7 +339,7 @@
 ;; Overridden to customise the C3P0 properties which can be used to avoid the high number of logins against Teradata
 ;; In case of such problem increase the value of acquireRetryDelay
 ;; https://github.com/metabase/metabase/blob/master/src/metabase/driver/sql_jdbc/connection.clj#L42
-;; https://www.mchange.com/projectstr/c3p0/#acquireRetryDelay
+;; https://www.mchange.com/projects/c3p0/#acquireRetryDelay
 (defmethod sql-jdbc.conn/data-warehouse-connection-pool-properties :teradata
   [driver database]
   {"acquireRetryDelay"            1000
